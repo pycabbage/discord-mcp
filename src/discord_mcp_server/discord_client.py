@@ -13,6 +13,7 @@ from .config import DiscordConfig
 
 logger = logging.getLogger(__name__)
 
+discord.VoiceClient.warn_nacl = False
 
 class DiscordClient:
     """Discord Bot クライアント"""
