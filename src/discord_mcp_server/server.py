@@ -2,6 +2,7 @@
 MCP サーバーメインモジュール
 Discord Bot メッセージ送信機能を提供するMCPサーバー
 """
+
 import asyncio
 import logging
 

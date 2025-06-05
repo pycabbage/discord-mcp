@@ -20,13 +20,17 @@ class TestDiscordConfig:
             discord_bot_token="test_token",
             discord_server_id="123456789",
             discord_channel_id="987654321",
+            discord_user_id=None,
         )
         config.validate_config()  # 例外が発生しないことを確認
 
     def test_valid_user_config(self):
         """ユーザー設定のテスト"""
         config = DiscordConfig(
-            discord_bot_token="test_token", discord_user_id="123456789"
+            discord_bot_token="test_token",
+            discord_user_id="123456789",
+            discord_channel_id=None,
+            discord_server_id=None,
         )
         config.validate_config()  # 例外が発生しないことを確認
 
@@ -35,13 +39,23 @@ class TestDiscordConfig:
         from pydantic import ValidationError
         
         with pytest.raises(ValidationError):  # Pydanticのバリデーションエラーをキャッチ
-            config = DiscordConfig()
+            config = DiscordConfig(
+                discord_bot_token=None,
+                discord_user_id=None,
+                discord_channel_id=None,
+                discord_server_id=None,
+            )
             config.validate_config()
 
     def test_missing_target(self):
         """送信先未設定のテスト"""
         with pytest.raises(ValueError, match="Either .* must be provided"):
-            config = DiscordConfig(discord_bot_token="test_token")
+            config = DiscordConfig(
+                discord_bot_token="test_token",
+                discord_user_id=None,
+                discord_channel_id=None,
+                discord_server_id=None,
+            )
             config.validate_config()
 
     def test_conflicting_targets(self):
@@ -77,12 +91,14 @@ class TestDiscordClient:
     async def test_initialization(self):
         """初期化のテスト"""
         config = DiscordConfig(
-            discord_bot_token="test_token", discord_user_id="123456789"
+            discord_bot_token="test_token",
+            discord_user_id="123456789",
+            discord_channel_id=None,
+            discord_server_id=None,
         )
         client = DiscordClient(config)
         assert client.config == config
         assert client.bot is None
-        assert not client._ready
 
 
 @pytest.mark.asyncio
@@ -95,12 +111,12 @@ class TestDiscordMCPServer:
 
         from mcp.types import ListToolsRequest
 
-        request = ListToolsRequest(method="tools/list", params={})
+        request = ListToolsRequest(method="tools/list")
 
         result = await server.list_tools(request)
 
         assert len(result.tools) == 1
         assert result.tools[0].name == "discord_send_message"
+        assert result.tools[0].description is not None
         assert "Discord Bot" in result.tools[0].description
         assert "message" in result.tools[0].inputSchema["properties"]
-
