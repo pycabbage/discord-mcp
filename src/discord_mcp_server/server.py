@@ -5,6 +5,7 @@ Discord Bot メッセージ送信機能を提供するMCPサーバー
 
 import asyncio
 import logging
+from typing import Any
 
 from mcp.server import NotificationOptions, Server
 from mcp.server.models import InitializationOptions
@@ -28,6 +29,7 @@ logger = logging.getLogger(__name__)
 
 class SendMessageArgs(BaseModel):
     """discord_send_message ツールの引数"""
+
     message: str
 
 
@@ -35,7 +37,7 @@ class DiscordMCPServer:
     """Discord MCP サーバー"""
 
     def __init__(self) -> None:
-        self.server: Server = Server("discord-mcp-server")
+        self.server: Server[Any] = Server("discord-mcp-server")
         self.config: DiscordConfig | None = None
         self.discord_client: DiscordClient | None = None
 
@@ -55,6 +57,10 @@ class DiscordMCPServer:
             await self.discord_client.initialize()
             logger.info("Discord client initialized successfully")
 
+        except ValueError as e:
+            # 設定エラーはユーザーフレンドリーなメッセージで表示
+            logger.error(f"設定エラー: {e}")
+            raise
         except Exception as e:
             logger.error(f"Failed to initialize server: {e}")
             raise
@@ -102,11 +108,10 @@ class DiscordMCPServer:
                 return CallToolResult(
                     content=[
                         TextContent(
-                            type="text",
-                            text="Error: Discord client is not initialized"
+                            type="text", text="Error: Discord client is not initialized"
                         )
                     ],
-                    isError=True
+                    isError=True,
                 )
 
             # メッセージを送信
@@ -130,7 +135,7 @@ class DiscordMCPServer:
                     content=[
                         TextContent(
                             type="text",
-                            text=f"Message sent successfully to {target_info}"
+                            text=f"Message sent successfully to {target_info}",
                         )
                     ]
                 )
@@ -139,22 +144,16 @@ class DiscordMCPServer:
                     content=[
                         TextContent(
                             type="text",
-                            text="Failed to send message. Check logs for details."
+                            text="Failed to send message. Check logs for details.",
                         )
                     ],
-                    isError=True
+                    isError=True,
                 )
 
         except Exception as e:
             logger.error(f"Error in discord_send_message: {e}")
             return CallToolResult(
-                content=[
-                    TextContent(
-                        type="text",
-                        text=f"Error: {e!s}"
-                    )
-                ],
-                isError=True
+                content=[TextContent(type="text", text=f"Error: {e!s}")], isError=True
             )
 
     async def run(self) -> None:
@@ -173,9 +172,9 @@ class DiscordMCPServer:
                     server_version="0.1.0",
                     capabilities=self.server.get_capabilities(
                         notification_options=NotificationOptions(),
-                        experimental_capabilities={}
-                    )
-                )
+                        experimental_capabilities={},
+                    ),
+                ),
             )
 
     async def close(self) -> None:
@@ -191,6 +190,9 @@ async def main() -> None:
         await server.run()
     except KeyboardInterrupt:
         logger.info("Server interrupted by user")
+    except ValueError as _e:
+        # 設定エラーはログ出力済みなので再発生のみ
+        raise
     except Exception as e:
         logger.error(f"Server error: {e}")
         raise
@@ -198,6 +200,16 @@ async def main() -> None:
         await server.close()
 
 
-if __name__ == "__main__":
-    asyncio.run(main())
+def cli_main() -> None:
+    """CLI エントリポイント"""
+    try:
+        asyncio.run(main())
+    except ValueError:
+        # 設定エラーの場合はスタックトレースを表示せず終了
+        exit(1)
+    except KeyboardInterrupt:
+        exit(0)
 
+
+if __name__ == "__main__":
+    cli_main()

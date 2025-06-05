@@ -2,6 +2,7 @@
 Discord クライアントモジュール
 Discord Bot の認証とメッセージ送信機能を提供
 """
+
 import asyncio
 import logging
 
@@ -118,4 +119,3 @@ class DiscordClient:
         if self.bot:
             await self.bot.close()
             self._ready = False
-

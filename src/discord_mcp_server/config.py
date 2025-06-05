@@ -2,7 +2,8 @@
 設定管理モジュール
 環境変数からDiscord Bot設定を読み込む
 """
-from pydantic import Field
+
+from pydantic import Field, ValidationError
 from pydantic_settings import BaseSettings
 
 
@@ -48,7 +49,38 @@ class DiscordConfig(BaseSettings):
 
 def get_config() -> DiscordConfig:
     """設定を取得し、妥当性をチェックして返す"""
-    config = DiscordConfig()  # type: ignore[call-arg]
-    config.validate_config()
-    return config
+    try:
+        config = DiscordConfig()  # type: ignore[call-arg]
+        config.validate_config()
+        return config
+    except ValidationError as e:
+        # Pydanticのバリデーションエラーをユーザーフレンドリーなメッセージに変換
+        missing_fields = []
+        for error in e.errors():
+            if error["type"] == "missing":
+                field_name = error["loc"][0] if error["loc"] else "unknown"
+                missing_fields.append(field_name)
 
+        if "discord_bot_token" in missing_fields:
+            raise ValueError(
+                "環境変数 DISCORD_BOT_TOKEN が設定されていません。\n"
+                "Discord Bot のトークンを設定してください。\n"
+                "詳細はREADME.mdを参照してください。"
+            ) from e
+        else:
+            raise ValueError(
+                f"必須の環境変数が設定されていません: {', '.join(missing_fields)}\n"
+                "詳細はREADME.mdを参照してください。"
+            ) from e
+    except ValueError as e:
+        # validate_config() からのエラーはそのまま再発生
+        if "Either (DISCORD_SERVER_ID and DISCORD_CHANNEL_ID)" in str(e):
+            raise ValueError(
+                "メッセージ送信先が設定されていません。\n"
+                "以下のいずれかを設定してください：\n"
+                "- チャンネル送信: DISCORD_SERVER_ID と DISCORD_CHANNEL_ID\n"
+                "- DM送信: DISCORD_USER_ID\n"
+                "詳細はREADME.mdを参照してください。"
+            ) from e
+        else:
+            raise
