@@ -82,24 +82,7 @@ async def send_message(content: str, retry_count: int = 0) -> SendMessageResult:
             return SendMessageResult(status="error", destination=f"Failed to create DM channel with user {env.user_id}")
         logger.info(f"DM channel: {channel}")
 
-        try:
-            await channel.send(content)
-        except Forbidden as e:
-            # send friend request
-            await container.client.http.request(
-                Route(
-                    "PUT",
-                    "/users/@me/relationships/{user_id}",
-                    user_id=env.user_id
-                ),
-                # context_properties=0,
-                # payload={}
-            )
-            if retry_count >= 3:
-                logger.error(f"Failed to send message after 3 retries: {e}")
-                return SendMessageResult(status="error", destination=f"Failed to send message: {e}")
-            return await send_message(content, retry_count + 1)
-
+        await channel.send(content)
         return SendMessageResult(status="success", destination=f"DM to user {env.user_id}")
     except Exception as e:
         logger.error(f"Error sending message: {e}")
