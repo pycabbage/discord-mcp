@@ -33,7 +33,7 @@ class DiscordClient:
         self.bot = commands.Bot(command_prefix="!", intents=intents)
 
         @self.bot.event
-        async def on_ready() -> None:
+        async def on_ready() -> None:  # type: ignore
             if self.bot and self.bot.user:
                 logger.info(f"Discord Bot logged in as {self.bot.user}")
             self._ready = True
