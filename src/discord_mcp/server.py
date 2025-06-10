@@ -8,7 +8,7 @@ from mcp.types import (
 )
 
 from .models import DiscordTools, DiscordSendMessage
-from .discord import send_message
+from .discord import send_message, container
 
 logger = logging.getLogger(__name__)
 
@@ -39,19 +39,32 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]: # type: ig
                 return [
                     TextContent(
                         type="text",
-                        text=f"Error sending message to {status.destination}"
+                        text=f"Error sending message: {status.destination}"
                     )
                 ]
             return [
                 TextContent(
                     type="text",
-                    text=f"Sending message to {status.destination} success"
+                    
+                    text=f"Message sent to {status.destination} successfully"
                 )
             ]
         case _:
             raise ValueError(f"Unknown tool: {name}")
 
+async def initialize():
+    # Initialize Discord client but don't block
+    try:
+        await container.setup()
+        logger.info("Discord client initialized")
+    except Exception as e:
+        logger.error(f"Error initializing Discord client: {e}")
+
 async def serve():
+    # Initialize Discord without blocking
+    await initialize()
+    
+    # Run MCP server
     options = server.create_initialization_options()
     async with stdio_server() as (read_stream, write_stream):
         await server.run(read_stream, write_stream, options, raise_exceptions=True)

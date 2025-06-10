@@ -15,8 +15,23 @@ def main(verbose: bool) -> None:
     elif verbose >= 2:
         logging_level = logging.DEBUG
 
-    logging.basicConfig(level=logging_level, stream=sys.stderr)
-    asyncio.run(serve())
+    logging.basicConfig(
+        # level=logging_level,
+        level=logging.DEBUG,
+        format="[%(asctime)s] [%(levelname)-5s] %(name)s: %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+        # stream=sys.stderr,
+        filename="discord_mcp.log",
+    )
+    
+    logger = logging.getLogger(__name__)
+    logger.info("Starting Discord MCP server")
+    
+    try:
+        asyncio.run(serve())
+    except Exception as e:
+        logger.error(f"Error running Discord MCP server: {e}")
+        raise
 
 if __name__ == "__main__":
     main()
