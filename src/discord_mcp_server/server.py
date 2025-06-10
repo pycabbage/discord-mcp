@@ -40,6 +40,7 @@ class DiscordMCPServer:
         self.server: Server[Any] = Server("discord-mcp-server")
         self.config: DiscordConfig | None = None
         self.discord_client: DiscordClient | None = None
+        self.discord_task: asyncio.Task[None] | None = None
 
         # ツールハンドラーを登録
         self.server.list_tools = self.list_tools  # type: ignore[assignment]
@@ -54,8 +55,9 @@ class DiscordMCPServer:
 
             # Discord クライアントを初期化
             self.discord_client = DiscordClient(self.config)
-            await self.discord_client.initialize()
-            logger.info("Discord client initialized successfully")
+            # Discord Botの初期化を非同期タスクとして開始（待機しない）
+            self.discord_task = asyncio.create_task(self._init_discord_client())
+            logger.info("Discord client initialization started")
 
         except ValueError as e:
             # 設定エラーはユーザーフレンドリーなメッセージで表示
@@ -64,6 +66,15 @@ class DiscordMCPServer:
         except Exception as e:
             logger.error(f"Failed to initialize server: {e}")
             raise
+
+    async def _init_discord_client(self) -> None:
+        """Discord クライアントを非同期で初期化"""
+        try:
+            if self.discord_client:
+                await self.discord_client.initialize()
+                logger.info("Discord client initialized successfully")
+        except Exception as e:
+            logger.error(f"Failed to initialize Discord client: {e}")
 
     async def list_tools(self, request: ListToolsRequest) -> ListToolsResult:
         """利用可能なツールのリストを返す"""
@@ -108,7 +119,11 @@ class DiscordMCPServer:
                 return CallToolResult(
                     content=[
                         TextContent(
-                            type="text", text="Error: Discord client is not initialized"
+                            type="text",
+                            text=(
+                                "Error: Discord client is not initialized. "
+                                "Please check the configuration."
+                            ),
                         )
                     ],
                     isError=True,
@@ -144,7 +159,11 @@ class DiscordMCPServer:
                     content=[
                         TextContent(
                             type="text",
-                            text="Failed to send message. Check logs for details.",
+                            text=(
+                                "Failed to send message. Discord Bot might still be "
+                                "connecting or lacking permissions. "
+                                "Please check the logs for details."
+                            ),
                         )
                     ],
                     isError=True,
@@ -179,6 +198,15 @@ class DiscordMCPServer:
 
     async def close(self) -> None:
         """サーバーを終了"""
+        # Discord タスクをキャンセル
+        if self.discord_task and not self.discord_task.done():
+            self.discord_task.cancel()
+            try:
+                await self.discord_task
+            except asyncio.CancelledError:
+                pass
+
+        # Discord クライアントを終了
         if self.discord_client:
             await self.discord_client.close()
 

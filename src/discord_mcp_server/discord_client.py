@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 discord.VoiceClient.warn_nacl = False
 
+
 class DiscordClient:
     """Discord Bot クライアント"""
 
@@ -46,9 +47,17 @@ class DiscordClient:
         # タスクの参照を保持(RUF006対応)
         self._connect_task = task
 
-        # Bot が準備完了するまで待機
-        while not self._ready:
+        # Bot が準備完了するまで待機（最大10秒）
+        for _ in range(100):  # 10秒間（0.1秒 x 100回）
+            if self._ready:
+                break
             await asyncio.sleep(0.1)
+
+        if not self._ready:
+            logger.warning(
+                "Discord Bot initialization timeout - "
+                "bot may still be connecting in background"
+            )
 
     async def send_message(self, content: str) -> bool:
         """
@@ -60,9 +69,23 @@ class DiscordClient:
         Returns:
             bool: 送信成功時True、失敗時False
         """
-        if not self.bot or not self._ready:
-            logger.error("Discord Bot is not ready")
+        if not self.bot:
+            logger.error("Discord Bot is not initialized")
             return False
+
+        if not self._ready:
+            logger.warning(
+                "Discord Bot is still connecting, waiting for ready state..."
+            )
+            # Botが準備できるまで少し待つ（最大5秒）
+            for _ in range(50):
+                if self._ready:
+                    break
+                await asyncio.sleep(0.1)
+
+            if not self._ready:
+                logger.error("Discord Bot is not ready after waiting")
+                return False
 
         try:
             # サーバー/チャンネルへの送信
