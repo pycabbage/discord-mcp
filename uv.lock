@@ -167,14 +167,16 @@ dependencies = [
     { name = "discord-py" },
     { name = "mcp" },
     { name = "pydantic" },
+    { name = "pydantic-settings" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "click", specifier = ">=8.1.7" },
     { name = "discord-py", specifier = ">=2.5.2" },
-    { name = "mcp", specifier = ">=1.0.0" },
-    { name = "pydantic", specifier = ">=2.0.0" },
+    { name = "mcp", specifier = ">=1.9.3" },
+    { name = "pydantic", specifier = ">=2.11.5" },
+    { name = "pydantic-settings", specifier = ">=2.9.1" },
 ]
 
 [[package]]

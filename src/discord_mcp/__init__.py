@@ -7,7 +7,7 @@ import asyncio
 @click.command()
 @click.option("-v", "--verbose", count=True)
 def main(verbose: bool) -> None:
-    """MCP Git Server - Git functionality for MCP"""
+    """MCP Discord Bot Server."""
 
     logging_level = logging.WARN
     if verbose == 1:
