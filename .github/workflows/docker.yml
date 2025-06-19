@@ -60,6 +60,7 @@ jobs:
           target: final
           attests: true
           sbom: true
+          provenance: true
       - name: Attest
         uses: actions/attest-build-provenance@v2
         id: attest
