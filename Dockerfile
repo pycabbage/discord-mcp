@@ -1,12 +1,18 @@
 FROM python:3.13-alpine AS base
-COPY --from=ghcr.io/astral-sh/uv:0.7.13 /uv /uvx /bin/
 WORKDIR /app
 
 FROM base AS builder
-COPY pyproject.toml uv.lock .python-version README.md src /app/
 RUN \
-  uv sync --locked 
+  --mount=from=ghcr.io/astral-sh/uv,source=/uv,target=/bin/uv \
+  --mount=type=cache,target=/root/.cache/uv \
+  --mount=source=pyproject.toml,target=/app/pyproject.toml \
+  --mount=source=uv.lock,target=/app/uv.lock \
+  --mount=source=.python-version,target=/app/.python-version \
+  --mount=source=README.md,target=/app/README.md \
+  --mount=source=src,target=/app/src \
+  UV_LINK_MODE=copy uv sync --locked --compile-bytecode --no-editable
 
 FROM base AS final
 COPY --from=builder /app /app
-ENTRYPOINT ["/bin/uv", "run", "discord-mcp"]
+WORKDIR /app
+ENTRYPOINT ["/app/.venv/bin/discord-mcp"]
