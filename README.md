@@ -34,6 +34,8 @@ Discordでメッセージを送信するMCP
       "command": "docker",
       "args": [
         "run",
+        "--pull",
+        "always",
         "-i",
         "--rm",
         "-e",
