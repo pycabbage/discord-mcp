@@ -26,3 +26,11 @@ indent-width = 4
 
 [tool.ruff.format]
 indent-style = "space"
+
+[tool.pyright]
+typeCheckingMode = "strict"
+include = [
+  "src/**/*.py",
+]
+venvPath = "."
+venv = ".venv"

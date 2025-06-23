@@ -26,4 +26,4 @@ class DiscordAskToUser(BaseModel):
 class ServerType(str, Enum):
     STDIO = "stdio"
     SSE = "sse"
-    STREAMABLE_HTTP = "streamable_http"
+    STREAMABLE_HTTP = "streamable_http"  # type: ignore
