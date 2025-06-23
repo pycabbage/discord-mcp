@@ -4,18 +4,48 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Overview
 
-This repository contains a Discord Model Context Protocol (MCP) server written in Python. It allows sending messages to Discord channels or DMs through MCP.
+This repository contains a Discord Model Context Protocol (MCP) server written in Python. It provides tools for sending messages and interacting with Discord, as well as resources for accessing message history and templates.
 
 ## Architecture
 
 The codebase is organized as follows:
 
-- `discord_mcp/server.py`: The core MCP server implementation that handles tool registration and execution
-- `discord_mcp/discord.py`: Handles Discord client functionality and message sending
+- `discord_mcp/server.py`: The core MCP server implementation that handles tool registration, execution, and resource serving
+- `discord_mcp/discord.py`: Handles Discord client functionality including message sending, user interaction, and message history retrieval
 - `discord_mcp/models.py`: Defines data models for Discord tools and messages
 - `discord_mcp/env.py`: Environment configuration for Discord bot token and user ID
+- `discord_mcp/templates.py`: Message template management with predefined templates
 
-The server exposes a single MCP tool called `send_message` which allows sending messages to Discord.
+## MCP Tools
+
+The server exposes the following tools:
+
+### 1. send_message
+Sends a message to a Discord DM channel.
+- **Input**: `content` (string) - The message content to send
+- **Output**: Success/error status with destination information
+
+### 2. ask_to_user
+Sends a message to a user and waits for their response.
+- **Input**: 
+  - `content` (string) - The message content to send
+  - `timeout_seconds` (int, default: 60) - Timeout for waiting response
+- **Output**: User's response or timeout/error status
+- **Note**: Uses timestamp checking to ensure only messages sent after the prompt are accepted as responses
+
+## MCP Resources
+
+The server provides the following resources:
+
+### 1. discord://dm-history
+Returns recent DM message history as JSON.
+- **Output**: Array of messages with id, author, content, timestamp, and bot status
+- **Limit**: 10 most recent messages (chronologically ordered)
+
+### 2. discord://templates/list
+Returns available message templates as JSON.
+- **Output**: Array of templates with id, name, description, content, and placeholders
+- **Available templates**: greeting, task_completed, error_notification, reminder, progress_update
 
 ## Environment Setup
 
@@ -31,10 +61,16 @@ These should be configured in a `.env` file or set as environment variables.
 ### Running the Discord MCP Server
 
 ```bash
-# Run the MCP server directly
-python -m discord_mcp
+# Run the MCP server using uv
+uv run discord-mcp
 
 # Run with verbose output
+uv run discord-mcp -v
+
+# Run directly with Python
+python -m discord_mcp
+
+# Run with verbose output (Python)
 python -m discord_mcp -v
 
 # Debug with MCP Inspector

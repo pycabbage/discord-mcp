@@ -1,8 +1,8 @@
 import click
 import logging
-import sys
 from .server import serve
 import asyncio
+
 
 @click.command()
 @click.option("-v", "--verbose", count=True)
@@ -22,15 +22,16 @@ def main(verbose: bool) -> None:
         # stream=sys.stderr,
         filename="discord_mcp.log",
     )
-    
+
     logger = logging.getLogger(__name__)
     logger.info("Starting Discord MCP server")
-    
+
     try:
         asyncio.run(serve())
     except Exception as e:
         logger.error(f"Error running Discord MCP server: {e}")
         raise
+
 
 if __name__ == "__main__":
     main()
