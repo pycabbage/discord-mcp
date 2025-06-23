@@ -1,12 +1,21 @@
 import click
 import logging
+
+from discord_mcp.models import ServerType
 from .server import serve
 import asyncio
 
 
 @click.command()
 @click.option("-v", "--verbose", count=True)
-def main(verbose: bool) -> None:
+@click.option(
+    "-t",
+    "--type",
+    type=ServerType,
+    default=ServerType.STDIO,
+    help="Type of server to run",
+)
+def main(verbose: bool, type: ServerType) -> None:
     """MCP Discord Bot Server."""
 
     logging_level = logging.WARN
@@ -27,7 +36,7 @@ def main(verbose: bool) -> None:
     logger.info("Starting Discord MCP server")
 
     try:
-        asyncio.run(serve())
+        asyncio.run(serve(type))
     except Exception as e:
         logger.error(f"Error running Discord MCP server: {e}")
         raise

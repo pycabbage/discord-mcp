@@ -1,4 +1,5 @@
 """Discord メッセージテンプレート管理"""
+
 from typing import TypedDict
 
 

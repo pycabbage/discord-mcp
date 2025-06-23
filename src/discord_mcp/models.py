@@ -21,3 +21,9 @@ class DiscordAskToUser(BaseModel):
         ge=1,  # Ensure timeout is at least 1 second
         le=3600,  # Ensure timeout does not exceed 1 hour
     )
+
+
+class ServerType(str, Enum):
+    STDIO = "stdio"
+    SSE = "sse"
+    STREAMABLE_HTTP = "streamable_http"

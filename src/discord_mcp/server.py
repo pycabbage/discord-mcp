@@ -11,7 +11,7 @@ from mcp.types import (
 )
 from pydantic import AnyUrl
 
-from .models import DiscordTools, DiscordSendMessage, DiscordAskToUser
+from .models import DiscordTools, DiscordSendMessage, DiscordAskToUser, ServerType
 from .discord import send_message, ask_to_user, container, get_dm_message_history
 
 logger = logging.getLogger(__name__)
@@ -108,11 +108,19 @@ async def initialize():
         logger.error(f"Error initializing Discord client: {e}")
 
 
-async def serve():
+async def serve(server_type: ServerType) -> None:
     # Initialize Discord without blocking
     await initialize()
 
     # Run MCP server
     options = server.create_initialization_options()
-    async with stdio_server() as (read_stream, write_stream):
-        await server.run(read_stream, write_stream, options, raise_exceptions=True)
+
+    if server_type == ServerType.STDIO:
+        async with stdio_server() as (read_stream, write_stream):
+            return await server.run(
+                read_stream, write_stream, options, raise_exceptions=True
+            )
+    elif server_type == ServerType.SSE:
+        pass
+    elif server_type == ServerType.STREAMABLE_HTTP:
+        pass
