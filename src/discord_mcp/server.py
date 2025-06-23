@@ -3,8 +3,6 @@ from json import dumps as json_dumps
 
 from mcp import stdio_server
 from mcp.server import Server
-from mcp.server.sse import sse_server
-from mcp.server.http import http_server
 from mcp.types import (
     TextContent,
     Tool,
@@ -110,7 +108,7 @@ async def initialize():
         logger.error(f"Error initializing Discord client: {e}")
 
 
-async def serve(server_type: ServerType, port: int = 8080) -> None:
+async def serve(server_type: ServerType) -> None:
     # Initialize Discord without blocking
     await initialize()
 
@@ -123,14 +121,6 @@ async def serve(server_type: ServerType, port: int = 8080) -> None:
                 read_stream, write_stream, options, raise_exceptions=True
             )
     elif server_type == ServerType.SSE:
-        async with sse_server(port=port) as streams:
-            logger.info(f"SSE server running on port {port}")
-            return await server.run(
-                streams.read_stream, streams.write_stream, options, raise_exceptions=True
-            )
+        pass
     elif server_type == ServerType.STREAMABLE_HTTP:
-        async with http_server(port=port) as streams:
-            logger.info(f"HTTP server running on port {port}")
-            return await server.run(
-                streams.read_stream, streams.write_stream, options, raise_exceptions=True
-            )
+        pass

@@ -42,6 +42,11 @@ Returns recent DM message history as JSON.
 - **Output**: Array of messages with id, author, content, timestamp, and bot status
 - **Limit**: 10 most recent messages (chronologically ordered)
 
+### 2. discord://templates/list
+Returns available message templates as JSON.
+- **Output**: Array of templates with id, name, description, content, and placeholders
+- **Available templates**: greeting, task_completed, error_notification, reminder, progress_update
+
 ## Environment Setup
 
 The server requires the following environment variables:
@@ -56,17 +61,11 @@ These should be configured in a `.env` file or set as environment variables.
 ### Running the Discord MCP Server
 
 ```bash
-# Run the MCP server using uv (default: STDIO)
+# Run the MCP server using uv
 uv run discord-mcp
 
 # Run with verbose output
 uv run discord-mcp -v
-
-# Run as SSE server on port 8080
-uv run discord-mcp -t sse
-
-# Run as HTTP server on custom port
-uv run discord-mcp -t streamable_http -p 3000
 
 # Run directly with Python
 python -m discord_mcp
@@ -77,25 +76,6 @@ python -m discord_mcp -v
 # Debug with MCP Inspector
 npx @modelcontextprotocol/inspector uv run discord-mcp
 ```
-
-### Server Types
-
-The Discord MCP server supports three different transport protocols:
-
-1. **STDIO (default)**: Standard input/output communication
-   ```bash
-   uv run discord-mcp
-   ```
-
-2. **SSE (Server-Sent Events)**: HTTP-based server with SSE transport
-   ```bash
-   uv run discord-mcp -t sse -p 8080
-   ```
-
-3. **Streamable HTTP**: HTTP-based server with streaming responses
-   ```bash
-   uv run discord-mcp -t streamable_http -p 8080
-   ```
 
 ### Development Commands
 

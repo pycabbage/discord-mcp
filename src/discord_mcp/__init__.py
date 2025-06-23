@@ -15,14 +15,7 @@ import asyncio
     default=ServerType.STDIO,
     help="Type of server to run",
 )
-@click.option(
-    "-p",
-    "--port",
-    type=int,
-    default=8080,
-    help="Port number for SSE or HTTP server (default: 8080)",
-)
-def main(verbose: bool, type: ServerType, port: int) -> None:
+def main(verbose: bool, type: ServerType) -> None:
     """MCP Discord Bot Server."""
 
     logging_level = logging.WARN
@@ -40,10 +33,10 @@ def main(verbose: bool, type: ServerType, port: int) -> None:
     )
 
     logger = logging.getLogger(__name__)
-    logger.info(f"Starting Discord MCP server with type={type.value}, port={port}")
+    logger.info("Starting Discord MCP server")
 
     try:
-        asyncio.run(serve(type, port=port))
+        asyncio.run(serve(type))
     except Exception as e:
         logger.error(f"Error running Discord MCP server: {e}")
         raise
