@@ -56,5 +56,5 @@ Discordでメッセージを送信するMCP
 ## デバッグ
 
 ```shell
-npx @modelcontextprotocol/inspector uv run discord-mcp
+pnpm dlx @modelcontextprotocol/inspector@latest uv run discord-mcp
 ```

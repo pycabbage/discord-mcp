@@ -7,8 +7,8 @@ from mcp.types import (
     Tool,
 )
 
-from .models import DiscordTools, DiscordSendMessage
-from .discord import send_message, container
+from .models import DiscordTools, DiscordSendMessage, DiscordAskToUser
+from .discord import send_message, ask_to_user, container
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +25,11 @@ async def list_tools() -> list[Tool]: # type: ignore
             name=DiscordTools.SEND_MESSAGE,
             description="Send a message to a Discord channel / DM",
             inputSchema=DiscordSendMessage.model_json_schema(),
+        ),
+        Tool(
+            name=DiscordTools.ASK_TO_USER,
+            description="Send a message to a user and wait for their response",
+            inputSchema=DiscordAskToUser.model_json_schema(),
         )
     ]
 
@@ -49,6 +54,30 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]: # type: ig
                     text=f"Message sent to {status.destination} successfully"
                 )
             ]
+        case DiscordTools.ASK_TO_USER:
+            args = DiscordAskToUser(**arguments) # type: ignore
+            result = await ask_to_user(args.content, args.timeout_seconds)
+            if result.status == "error":
+                logger.error(f"Failed to ask user: {result.destination}")
+                return [
+                    TextContent(
+                        type="text",
+                        text=f"Error asking user: {result.destination}"
+                    )
+                ]
+            elif result.status == "timeout":
+                return [
+                    TextContent(
+                        type="text",
+                        text=f"Timeout: {result.destination}"
+                    )
+                ]
+            return [
+                TextContent(
+                    type="text",
+                    text=f"User response: {result.response}"
+                )
+            ]
         case _:
             raise ValueError(f"Unknown tool: {name}")
 
@@ -63,7 +92,7 @@ async def initialize():
 async def serve():
     # Initialize Discord without blocking
     await initialize()
-    
+
     # Run MCP server
     options = server.create_initialization_options()
     async with stdio_server() as (read_stream, write_stream):

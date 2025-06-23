@@ -1,9 +1,9 @@
 import asyncio
 import logging
-from typing import Any, Callable, Coroutine, Literal, TypeVar
-from discord import Client, Forbidden, Intents, VoiceClient
-from discord.http import Route
+from typing import Any, Callable, Coroutine, Literal, TypeVar, Optional, Union
+from discord import Client, Intents, VoiceClient, Message
 from pydantic import BaseModel
+from datetime import datetime
 
 VoiceClient.warn_nacl = False
 
@@ -55,8 +55,21 @@ class DiscordClientContainer:
 
 container = DiscordClientContainer()
 
-class SendMessageResult(BaseModel):
-    status: Literal["success", "error"]
+
+class SendMessageResultSuccess(BaseModel):
+    status: Literal["success"]
+    destination: str
+    created_at: datetime
+
+class SendMessageResultError(BaseModel):
+    status: Literal["error"]
+    destination: str
+
+SendMessageResult = Union[SendMessageResultSuccess, SendMessageResultError]
+
+class AskToUserResult(BaseModel):
+    status: Literal["success", "error", "timeout"]
+    response: Optional[str] = None
     destination: str
 
 async def send_message(content: str, retry_count: int = 0) -> SendMessageResult:
@@ -66,12 +79,12 @@ async def send_message(content: str, retry_count: int = 0) -> SendMessageResult:
             await container.start()
         except Exception as e:
             logger.error(f"Failed to start Discord client: {e}")
-            return SendMessageResult(status="error", destination=f"Failed to initialize Discord client: {e}")
+            return SendMessageResultError(status="error", destination=f"Failed to initialize Discord client: {e}")
 
     try:
         user = await container.client.fetch_user(int(env.user_id))
         if not user:
-            return SendMessageResult(status="error", destination=f"User {env.user_id} not found")
+            return SendMessageResultError(status="error", destination=f"User {env.user_id} not found")
         logger.info(f"Sending message to user {env.user_id}: {content}")
 
         channel = user.dm_channel
@@ -79,11 +92,58 @@ async def send_message(content: str, retry_count: int = 0) -> SendMessageResult:
             logger.info(f"Creating DM channel with user {env.user_id}")
             channel = await user.create_dm()
         if not channel:
-            return SendMessageResult(status="error", destination=f"Failed to create DM channel with user {env.user_id}")
+            return SendMessageResultError(status="error", destination=f"Failed to create DM channel with user {env.user_id}")
         logger.info(f"DM channel: {channel}")
 
-        await channel.send(content)
-        return SendMessageResult(status="success", destination=f"DM to user {env.user_id}")
+        sent_message = await channel.send(content)
+        return SendMessageResultSuccess(status="success", destination=f"DM to user {env.user_id}", created_at=sent_message.created_at)
     except Exception as e:
         logger.error(f"Error sending message: {e}")
-        return SendMessageResult(status="error", destination=str(e))
+        return SendMessageResultError(status="error", destination=str(e))
+
+async def ask_to_user(content: str, timeout_seconds: int = 60) -> AskToUserResult:
+    # まずメッセージを送信
+    send_result = await send_message(content)
+    if send_result.status == "error":
+        return AskToUserResult(status="error", destination=send_result.destination)
+    
+    # 返答を待つ
+    try:
+        user_id = int(env.user_id)
+        
+        def check_message(message: Message) -> bool:
+            # DMチャンネルで、対象ユーザーからのメッセージかチェック
+            # かつ、送信後のメッセージのみを受け付ける
+            return (
+                message.author.id == user_id
+                and hasattr(message.channel, 'type') 
+                and str(message.channel.type) == 'private'
+                and not message.author.bot
+                and message.created_at > send_result.created_at
+            )
+        
+        # wait_forを使用して返答を待つ
+        try:
+            response_message = await asyncio.wait_for(
+                container.client.wait_for('message', check=check_message),
+                timeout=timeout_seconds
+            )
+            if response_message.content.startswith("Error "):
+                return AskToUserResult(
+                    status="error",
+                    response=response_message.content,
+                    destination=f"DM from user {env.user_id}"
+                )
+            return AskToUserResult(
+                status="success",
+                response=response_message.content,
+                destination=f"DM from user {env.user_id}"
+            )
+        except asyncio.TimeoutError:
+            return AskToUserResult(
+                status="timeout",
+                destination=f"Timeout waiting for response from user {env.user_id} after {timeout_seconds} seconds"
+            )
+    except Exception as e:
+        logger.error(f"Error waiting for user response: {e}")
+        return AskToUserResult(status="error", destination=str(e))
