@@ -31,9 +31,6 @@ class DiscordClientContainer:
         self.ready = asyncio.Event()
 
     async def setup(self):
-        # if self.client is not None:
-        #     return
-
         intents = Intents.default()
         intents.message_content = True
         self.client = Client(intents=intents)

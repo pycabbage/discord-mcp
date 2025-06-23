@@ -7,12 +7,12 @@ from mcp.types import (
     TextContent,
     Tool,
     Resource,
+    ResourceTemplate,
 )
 from pydantic import AnyUrl
 
 from .models import DiscordTools, DiscordSendMessage, DiscordAskToUser
 from .discord import send_message, ask_to_user, container, get_dm_message_history
-from .templates import get_templates
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +20,7 @@ server = Server("discord-mcp", "0.1.0", "A Discord bot that sends messages")
 
 
 @server.list_tools()
-async def list_tools() -> list[Tool]:  # type: ignore
+async def list_tools() -> list[Tool]:
     return [
         Tool(
             name=DiscordTools.SEND_MESSAGE,
@@ -36,18 +36,12 @@ async def list_tools() -> list[Tool]:  # type: ignore
 
 
 @server.list_resources()
-async def list_resources() -> list[Resource]:  # type: ignore
+async def list_resources() -> list[Resource]:
     return [
         Resource(
-            uri=AnyUrl("discord://dm-history"),  # type: ignore
+            uri=AnyUrl("discord://dm-history"),
             name="DM Message History",
             description="Get recent DM message history",
-            mimeType="application/json",
-        ),
-        Resource(
-            uri=AnyUrl("discord://templates/list"),  # type: ignore
-            name="Message Templates",
-            description="Get available message templates",
             mimeType="application/json",
         ),
     ]
@@ -90,16 +84,19 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:  # type: i
 
 
 @server.read_resource()
-async def read_resource(uri: AnyUrl) -> str:  # type: ignore
+async def read_resource(uri: AnyUrl) -> str:
     uri_str = str(uri)
     if uri_str == "discord://dm-history":
         messages = await get_dm_message_history(limit=10)
         return json_dumps(messages, ensure_ascii=False, indent=2)
-    elif uri_str == "discord://templates/list":
-        templates = get_templates()
-        return json_dumps(templates, ensure_ascii=False, indent=2)
     else:
         raise ValueError(f"Unknown resource: {uri}")
+
+
+@server.list_resource_templates()
+async def list_resource_templates() -> list[ResourceTemplate]:
+    """リソーステンプレートの一覧を返す"""
+    return []
 
 
 async def initialize():
